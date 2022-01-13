@@ -1,8 +1,14 @@
 from odoo import models,fields
 
+class  EstatePropertyType(models.Model):
+    _name="estate.property.type"
+    _description="Estate Property Type"
+
+    name = fields.Char()
+
 class EstateProperty(models.Model):
     _name = "estate.property"
-    _description = "Estate_Property"
+    _description = "Estate Property"
     
     
     name = fields.Char(default = "Unkhown",required = True)
@@ -24,3 +30,5 @@ class EstateProperty(models.Model):
     	("West", "West")
     	])
     active = fields.Boolean(default=True)
+    image = fields.Image()
+    property_type_id = fields.Many2one("estate.property.type")
