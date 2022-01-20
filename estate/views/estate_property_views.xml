@@ -33,6 +33,10 @@
         <field name="model">estate.property</field>
         <field name="arch" type= "xml">
             <form>
+            <header>
+                <button string="Sold" name="action_sold" type="object" class="oe_highlight"/>
+                <button string="Cancel" name="action_cancel" type="object" class="oe_highlight"/>
+            </header>
                 <sheet>
                 <group>
                     <group>
@@ -48,6 +52,7 @@
                         <field name="validity" />
                     </group>
                     <group>
+                        <field name="offer_state"/>
                         <field name="image" widget="image" class="oe_avatar"/>
                     </group>
                 </group>
@@ -96,7 +101,15 @@
                             </group>
                         </page>
                         <page string="Offer">
-                            <field name="property_offer_id" />
+                            <field name="property_offer_id">
+                                <tree>
+                                    <field name="partner_id" />
+                                    <field name="price" />
+                                    <button string="Accepted" name="action_accepted" type="object" icon="fa-check"/>
+                                    <button string="Refused" name="action_refused" type="object" icon="fa-close"/>
+                                    <field name="status" />
+                                </tree>
+                            </field>
                         </page>
                     </notebook>
                 </sheet>

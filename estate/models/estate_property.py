@@ -9,11 +9,19 @@ class EstatePropertyOffer(models.Model):
     price = fields.Float()
     status = fields.Selection([
         ("accepted","Accepted"),
-        ("refuse","Refuse")
+        ("refused","Refused")
         ])
 
     partner_id = fields.Many2one("res.partner")
     property_id = fields.Many2one("estate.property")
+
+    def action_accepted(self):
+        for record in self:
+            record.status = "accepted"
+
+    def action_refused(self):
+        for record in self:
+            record.status= "refused"
 
 class EstatePropertyTag(models.Model):
     _name = "estate.property.tag"
@@ -45,10 +53,10 @@ class EstateProperty(models.Model):
     garden = fields.Boolean()
     garden_area = fields.Integer()
     garden_orientation = fields.Selection([
-    	("North", "North"),
-    	("South", "South"),
-    	("East", "East"),
-    	("West", "West")
+    	("north", "North"),
+    	("south", "South"),
+    	("east", "East"),
+    	("west", "West")
     	])
     active = fields.Boolean(default=True)
     image = fields.Image()
@@ -61,13 +69,33 @@ class EstateProperty(models.Model):
     best_price = fields.Float(compute="_compute_best_price")
     validity = fields.Integer(default=7)
     date_deadline = fields.Date(compute="_compute_date_deadline")
+    offer_state=fields.Selection([
+        ("new", "New"),
+        ("sold", "Sold"),
+        ("cancel", "Canceled")
+    ])
 
 
-
-    @api.depends("living_area", "garden_area")
-    def _compute_area(self):
+    @api.onchange("garden")
+    def _onchange_garden(self):
         for record in self:
-            record.total_area = record.living_area + record.garden_area
+            if record.garden:
+                record.garden_area=1000
+                record.garden_orientation="north"
+            else:
+                record.garden_area=0
+                record.garden_orientation=None
+
+
+    @api.depends("validity")
+    def _compute_date_deadline(self):
+        for record in self:
+            record.date_deadline = fields.Date.add(record.date_availability, days=record.validity)
+
+
+    def _inverse_area(self):
+        for record in self:
+            record.living_area = record.garden_area = record.total_area/2
 
     @api.depends("property_offer_id.price")
     def _compute_best_price(self):
@@ -78,13 +106,15 @@ class EstateProperty(models.Model):
                     max_price = offer.price
             record.best_price = max_price
 
-
-    def _inverse_area(self):
+    @api.depends("living_area", "garden_area")
+    def _compute_area(self):
         for record in self:
-            record.living_area = record.garden_area = record.total_area/2
+            record.total_area = record.living_area + record.garden_area
 
-
-    @api.depends("validity")
-    def _compute_date_deadline(self):
+    def action_sold(self):
         for record in self:
-            record.date_deadline = fields.Date.add(record.date_availability, days=7)
+            record.offer_state="sold"
+
+    def action_cancel(self):
+        for record in self:
+            record.offer_state="cancel"
