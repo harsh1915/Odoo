@@ -20,10 +20,17 @@
         <field name="view_mode">tree,form</field>
     </record>
 
+    <record id="real_estate_properties_myproperty_action" model="ir.actions.act_window">
+        <field name="name">My Property</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">tree,form,graph,pivot</field>
+    </record>
+
     <menuitem id="menu_real_estate_root" name="Real Estate">
         <menuitem id="menu_real_estate_advertisment" name="Advertisment">
             <menuitem id="manu_real_estate_action" action="real_estate_properties_action"/>
             <menuitem id="manu_real_estate_offer_action" action="real_estate_properties_offer_action"/>
+            <menuitem id="manu_real_estate_properties_myproperty_action" action="real_estate_properties_myproperty_action"/>
         </menuitem>
     </menuitem>
 

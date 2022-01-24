@@ -1,5 +1,8 @@
 from email.policy import default
+from tkinter.tix import INTEGER
+from unicodedata import name
 from odoo import models,fields,api
+from odoo.exceptions import UserError, ValidationError
 
 class EstatePropertyOffer(models.Model):
     _name = "estate.property.offer"
@@ -18,6 +21,9 @@ class EstatePropertyOffer(models.Model):
     def action_accepted(self):
         for record in self:
             record.status = "accepted"
+            # set buyer and selling price
+            record.property_id.buyer_id=record.partner_id
+            record.property_id.selling_price=record.price
 
     def action_refused(self):
         for record in self:
@@ -26,18 +32,24 @@ class EstatePropertyOffer(models.Model):
 class EstatePropertyTag(models.Model):
     _name = "estate.property.tag"
     _description = "Estate Property Tag"
+    _sql_constraints = [('unique_property_tag_name', 'unique(name)', 'Tag cannot be duplicated')]
 
     name = fields.Char()
+    color =fields.Integer()
 
-class  EstatePropertyType(models.Model):
+class EstatePropertyType(models.Model):
     _name="estate.property.type"
     _description="Estate Property Type"
+    _sql_constraints = [('unique_property_type_name', 'unique(name)', 'Type cannot be duplicated')]
 
     name = fields.Char()
+    property_ids=fields.One2many("estate.property","property_type_id" )
 
 class EstateProperty(models.Model):
     _name = "estate.property"
     _description = "Estate Property"
+    _sql_constraints = [('postive_price', 'check(expected_price >0)', 'Enter positive value')]
+    _order="expected_price desc"
     
     
     name = fields.Char(default = "Unkhown",required = True)
@@ -65,7 +77,7 @@ class EstateProperty(models.Model):
     buyer_id = fields.Many2one("res.partner")
     property_tag_id = fields.Many2many("estate.property.tag")
     property_offer_id = fields.One2many("estate.property.offer", "property_id")
-    total_area = fields.Integer(compute="_compute_area", inverse="_inverse_area")
+    total_area = fields.Integer(compute="_compute_area")
     best_price = fields.Float(compute="_compute_best_price")
     validity = fields.Integer(default=7)
     date_deadline = fields.Date(compute="_compute_date_deadline")
@@ -93,10 +105,6 @@ class EstateProperty(models.Model):
             record.date_deadline = fields.Date.add(record.date_availability, days=record.validity)
 
 
-    def _inverse_area(self):
-        for record in self:
-            record.living_area = record.garden_area = record.total_area/2
-
     @api.depends("property_offer_id.price")
     def _compute_best_price(self):
         for record in self:
@@ -117,4 +125,12 @@ class EstateProperty(models.Model):
 
     def action_cancel(self):
         for record in self:
+            if record.offer_state=="sold":
+                raise UserError("Solded property can not be cancel !")
             record.offer_state="cancel"
+
+    @api.constrains('living_area', 'garden_area')
+    def _check_garden_area(self):
+        for record in self:
+            if record.living_area < record.garden_area:
+                raise ValidationError("Garden cannot be bigger than living area")
